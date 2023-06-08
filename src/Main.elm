@@ -3,6 +3,7 @@ module Main exposing (main)
 import Browser
 import Html exposing (..)
 import Html.Events exposing (onInput)
+import Html.Attributes exposing (value)
 
 
 main : Program () Model Msg
@@ -24,13 +25,13 @@ init _ =
     ({ userUrl = "", fixedUrl = ""}, Cmd.none)
 
 type Msg
-    = UrlUpdate
+    = UrlUpdate String
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        UrlUpdate ->
-            (model, Cmd.none)
+        UrlUpdate url ->
+            ({model | userUrl = url }, Cmd.none)
 
 type alias Document msg =
     { title : String
@@ -38,11 +39,11 @@ type alias Document msg =
     }
 
 view : Model -> Document Msg
-view _ =
-    { title = "tbd"
+view model =
+    { title = "Safelinks Remover"
     , body =
         [ div [ ]
-            [
+            [ input [ value model.userUrl, onInput UrlUpdate ] []
             ]
         ]
     }
