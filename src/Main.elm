@@ -3,8 +3,8 @@ module Main exposing (main)
 import Browser
 import Html exposing (..)
 import Html.Events exposing (onInput)
-import Html.Attributes exposing (value)
-
+import Html.Attributes exposing (value, type_, checked)
+import Html.Events exposing (onClick)
 
 main : Program () Model Msg
 main =
@@ -18,20 +18,24 @@ main =
 type alias Model =
     { userUrl : String
     , fixedUrl : String
+    , noSafelinks : Bool
     }
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ({ userUrl = "", fixedUrl = ""}, Cmd.none)
+    ({ userUrl = "", fixedUrl = "", noSafelinks = False }, Cmd.none)
 
 type Msg
     = UrlUpdate String
+    | ToggleSafelinks
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         UrlUpdate url ->
-            ({model | userUrl = url }, Cmd.none)
+            ({ model | userUrl = url }, Cmd.none)
+        ToggleSafelinks ->
+            ({ model | noSafelinks = not model.noSafelinks }, Cmd.none)
 
 type alias Document msg =
     { title : String
@@ -44,6 +48,7 @@ view model =
     , body =
         [ div [ ]
             [ input [ value model.userUrl, onInput UrlUpdate ] []
+            , input [ type_ "checkbox", checked model.noSafelinks, onClick ToggleSafelinks ] []
             ]
         ]
     }
