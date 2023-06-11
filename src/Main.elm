@@ -20,15 +20,17 @@ type alias Model =
     { userUrl : String
     , fixedUrl : String
     , noSafelinks : Bool
+    , showComponents : Bool
     }
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ({ userUrl = "", fixedUrl = "", noSafelinks = False }, Cmd.none)
+    ({ userUrl = "", fixedUrl = "", noSafelinks = False, showComponents = False }, Cmd.none)
 
 type Msg
     = UrlUpdate String
     | ToggleSafelinks
+    | ToggleComponents
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -37,6 +39,8 @@ update msg model =
             ({ model | userUrl = url }, Cmd.none)
         ToggleSafelinks ->
             ({ model | noSafelinks = not model.noSafelinks }, Cmd.none)
+        ToggleComponents ->
+            ({ model | showComponents = not model.showComponents }, Cmd.none)
 
 type alias Document msg =
     { title : String
@@ -51,13 +55,31 @@ view model =
             [ input [ value model.userUrl, onInput UrlUpdate ] []
             , input [ type_ "checkbox", checked model.noSafelinks, onClick ToggleSafelinks ] []
             , p [ ] [ model.userUrl |> Url.percentDecode |> Maybe.withDefault "invalid url" |> text ]
+            , input [ type_ "checkbox", checked model.showComponents, onClick ToggleComponents ] [ p [] [ text "Show Components" ] ]
+            , p [ ] [ if model.showComponents then (model.userUrl |> Url.fromString |> urlDisplay) else text ""  ]
             ]
         ]
     }
 
+urlDisplay : Maybe Url.Url -> Html Msg
+urlDisplay url =
+    case url of
+        Just u ->
+            ul []
+                [ li [] [ "protocol: " ++ (u.protocol |> protocolString) |> text]
+                , li [] [ "host: " ++ u.host |> text]
+                , li [] [ "path: " ++ u.path |> text]
+                , li [] [ "query: " ++ (u.query |> Maybe.withDefault "") |> text]
+                , li [] [ "fragment: " ++ (u.fragment |> Maybe.withDefault "") |> text]
+            ]
+        Nothing ->
+            "invalid url" |> text
 
-
-
+protocolString : Url.Protocol -> String
+protocolString p =
+    case p of
+    Url.Http -> "HTTP"
+    Url.Https -> "HTTPS"
 
 
 
