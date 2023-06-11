@@ -17,15 +17,16 @@ main =
         }
 
 type alias Model =
-    { userUrl : String
-    , fixedUrl : String
+    { inputUrl : String
+    , decodedUrl : Maybe String
     , noSafelinks : Bool
     , showComponents : Bool
+    , x : String
     }
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ({ userUrl = "", fixedUrl = "", noSafelinks = False, showComponents = False }, Cmd.none)
+    ({ inputUrl = "", decodedUrl = Nothing, x = "", noSafelinks = False, showComponents = False }, Cmd.none)
 
 type Msg
     = UrlUpdate String
@@ -34,11 +35,17 @@ type Msg
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    let
+        decoded noSF url = (if noSF then removeSafelink url else url) |> Url.percentDecode
+    in
     case msg of
         UrlUpdate url ->
-            ({ model | userUrl = url }, Cmd.none)
+            ({ model | inputUrl = url, decodedUrl = decoded model.noSafelinks url }, Cmd.none)
         ToggleSafelinks ->
-            ({ model | noSafelinks = not model.noSafelinks }, Cmd.none)
+            let
+                sf = not model.noSafelinks
+            in
+            ({ model | noSafelinks = sf, decodedUrl = decoded sf model.inputUrl }, Cmd.none)
         ToggleComponents ->
             ({ model | showComponents = not model.showComponents }, Cmd.none)
 
@@ -58,13 +65,26 @@ view model =
             , input [ type_ "checkbox", checked model.showComponents, onClick ToggleComponents, id "components" ] [ ]
             , label [ for "components" ] [ text "Show Components" ]
             , br [] []
-            , input [ value model.userUrl, onInput UrlUpdate, size 100 ] []
-            , p [ ] [ model.userUrl |> Url.percentDecode |> Maybe.withDefault "invalid url" |> text ]
-            , p [ ] [ if model.showComponents then (model.userUrl |> Url.fromString |> urlDisplay) else text ""  ]
+            , input [ value model.inputUrl, onInput UrlUpdate, size 100 ] []
+            , p [ ] [ model.decodedUrl |> Maybe.withDefault "" |> text ]
+            , p [ ] [ if model.showComponents then (model.decodedUrl |> (Maybe.andThen Url.fromString) |> urlDisplay) else text "" ]
             ]
         ]
     }
 
+removeSafelink : String -> String
+removeSafelink url =
+    if String.contains "safelinks" url then
+        let
+            idx = String.indexes "url=" url
+        in
+            case idx of
+            i :: _ ->
+                String.dropLeft (i + 4) url
+            [] ->
+                url
+    else
+        url
 
 urlDisplay : Maybe Url.Url -> Html Msg
 urlDisplay url =
@@ -85,8 +105,3 @@ protocolString p =
     case p of
     Url.Http -> "HTTP"
     Url.Https -> "HTTPS"
-
-
-
-
-
