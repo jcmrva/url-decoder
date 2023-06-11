@@ -5,6 +5,7 @@ import Html exposing (..)
 import Html.Events exposing (onInput)
 import Html.Attributes exposing (value, type_, checked)
 import Html.Events exposing (onClick)
+import Url
 
 main : Program () Model Msg
 main =
@@ -44,11 +45,12 @@ type alias Document msg =
 
 view : Model -> Document Msg
 view model =
-    { title = "Safelinks Remover"
+    { title = "URL Decoder"
     , body =
         [ div [ ]
             [ input [ value model.userUrl, onInput UrlUpdate ] []
             , input [ type_ "checkbox", checked model.noSafelinks, onClick ToggleSafelinks ] []
+            , p [ ] [ model.userUrl |> Url.percentDecode |> Maybe.withDefault "invalid url" |> text ]
             ]
         ]
     }
