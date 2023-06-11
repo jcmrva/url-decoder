@@ -3,7 +3,7 @@ module Main exposing (main)
 import Browser
 import Html exposing (..)
 import Html.Events exposing (onInput)
-import Html.Attributes exposing (value, type_, checked)
+import Html.Attributes exposing (value, type_, checked, id, for, size)
 import Html.Events exposing (onClick)
 import Url
 
@@ -52,14 +52,19 @@ view model =
     { title = "URL Decoder"
     , body =
         [ div [ ]
-            [ input [ value model.userUrl, onInput UrlUpdate ] []
-            , input [ type_ "checkbox", checked model.noSafelinks, onClick ToggleSafelinks ] []
+            [
+              input [ type_ "checkbox", checked model.noSafelinks, onClick ToggleSafelinks, id "safelinks" ] []
+            , label [ for "safelinks" ] [ text "Remove Safe Links" ]
+            , input [ type_ "checkbox", checked model.showComponents, onClick ToggleComponents, id "components" ] [ ]
+            , label [ for "components" ] [ text "Show Components" ]
+            , br [] []
+            , input [ value model.userUrl, onInput UrlUpdate, size 100 ] []
             , p [ ] [ model.userUrl |> Url.percentDecode |> Maybe.withDefault "invalid url" |> text ]
-            , input [ type_ "checkbox", checked model.showComponents, onClick ToggleComponents ] [ p [] [ text "Show Components" ] ]
             , p [ ] [ if model.showComponents then (model.userUrl |> Url.fromString |> urlDisplay) else text ""  ]
             ]
         ]
     }
+
 
 urlDisplay : Maybe Url.Url -> Html Msg
 urlDisplay url =
