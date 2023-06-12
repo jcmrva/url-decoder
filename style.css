@@ -2,3 +2,21 @@ body {
     background-color: #333;
     color: lightblue;
 }
+
+a {
+    text-decoration-color: white;
+}
+a:visited {
+    color: lightblue;
+    text-decoration-color: fuchsia;
+}
+a:link {
+    color: blanchedalmond;
+}
+a:hover {
+    color: orange;
+    text-decoration-color: orangered;
+}
+a:active {
+    color: white;
+}
