@@ -5,6 +5,7 @@ import Html exposing (..)
 import Html.Attributes exposing (value, type_, checked, id, for, size, href)
 import Html.Events exposing (onInput, onClick)
 import Url
+import Tuple exposing (first, second)
 
 main : Program () Model Msg
 main =
@@ -102,7 +103,7 @@ urlDisplay url =
                 [ li [] [ "protocol: " ++ (u.protocol |> protocolString) |> text ]
                 , li [] [ "host: " ++ u.host |> text ]
                 , li [] [ "path: " ++ u.path |> text ]
-                , li [] [ "query: " ++ (u.query |> Maybe.withDefault "") |> text ]
+                , li [] [ "query: " |> text, (u.query |> Maybe.withDefault "") |> viewQueryString ]
                 , li [] [ "fragment: " ++ (u.fragment |> Maybe.withDefault "") |> text ]
             ]
         Nothing ->
@@ -113,3 +114,35 @@ protocolString p =
     case p of
     Url.Http -> "HTTP"
     Url.Https -> "HTTPS"
+
+parseQueryString : String -> List (String, Maybe String)
+parseQueryString qs =
+    let
+        qsKV kv =
+            String.split "=" kv
+        parseKVP kvs =
+            case kvs of
+            k :: "" :: _ ->
+                (Just k, Nothing)
+            k :: v :: _ ->
+                (Just k, Just v)
+            "" :: _ ->
+                (Nothing, Nothing)
+            k :: _ ->
+                (Just k, Nothing)
+            [] ->
+                (Nothing, Nothing)
+    in
+    String.split "&" qs
+    |> List.map (qsKV >> parseKVP)
+    |> List.filter ((/=) (Nothing, Nothing))
+    |> List.map (\kv -> (first kv |> Maybe.withDefault "missing query string key", second kv))
+
+viewQueryString : String -> Html Msg
+viewQueryString qs =
+    let
+        formatKV : (String, Maybe String) -> Html Msg
+        formatKV kv =
+            li [] [ first kv ++ ": " ++ (second kv |> Maybe.withDefault "") |> text ]
+    in
+    div [] [ ul [] (qs |> parseQueryString |> List.map formatKV) ]
