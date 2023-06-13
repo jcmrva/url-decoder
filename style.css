@@ -22,3 +22,8 @@ a:hover {
 a:active {
     color: white;
 }
+
+.chkbox {
+    display: inline;
+    margin: 0.5rem;
+}

@@ -2,7 +2,7 @@ module Main exposing (main)
 
 import Browser
 import Html exposing (..)
-import Html.Attributes exposing (value, type_, checked, id, for, size, href)
+import Html.Attributes exposing (value, type_, checked, id, for, size, href, class)
 import Html.Events exposing (onInput, onClick)
 import Url
 import Tuple exposing (first, second)
@@ -26,7 +26,13 @@ type alias Model =
 
 init : () -> (Model, Cmd Msg)
 init _ =
-    ({ inputUrl = "", decodedUrl = Nothing, noSafelinks = False, clickable = False, showComponents = False }, Cmd.none)
+    (
+        { inputUrl = ""
+        , decodedUrl = Nothing
+        , noSafelinks = False
+        , clickable = False
+        , showComponents = True }
+    , Cmd.none)
 
 type Msg
     = UrlUpdate String
@@ -59,15 +65,20 @@ type alias Document msg =
 
 view : Model -> Document Msg
 view model =
+    let
+        chkbox : String -> Bool -> String -> msg -> Html msg
+        chkbox id_ val txt msg =
+            div [ class "chkbox" ]
+                [ input [ type_ "checkbox", checked val, onClick msg, id id_ ] []
+                , label [ for id_ ] [ text txt ]
+                ]
+    in
     { title = "URL Decoder"
     , body =
         [ div []
-            [ input [ type_ "checkbox", checked model.noSafelinks, onClick ToggleSafelinks, id "safelinks" ] []
-            , label [ for "safelinks" ] [ text "Remove Safe Links" ]
-            , input [ type_ "checkbox", checked model.showComponents, onClick ToggleComponents, id "components" ] []
-            , label [ for "components" ] [ text "Show Components" ]
-            , input [ type_ "checkbox", checked model.clickable, onClick ToggleClickableUrl, id "clickable" ] []
-            , label [ for "clickable" ] [ text "Clickable Decoded URL" ]
+            [ chkbox "safelinks" model.noSafelinks "Remove Safe Links" ToggleSafelinks
+            , chkbox "components" model.showComponents "Show Components" ToggleComponents
+            , chkbox "clickable" model.clickable "Clickable Decoded URL" ToggleClickableUrl
             , br [] []
             , input [ value model.inputUrl, onInput UrlUpdate, size 100 ] []
             , p [] [ formatDecodedUrl model.clickable model.decodedUrl ]
@@ -136,7 +147,7 @@ parseQueryString qs =
     String.split "&" qs
     |> List.map (qsKV >> parseKVP)
     |> List.filter ((/=) (Nothing, Nothing))
-    |> List.map (\kv -> (first kv |> Maybe.withDefault "missing query string key", second kv))
+    |> List.map (\kv -> (first kv |> Maybe.withDefault "___", second kv))
 
 viewQueryString : String -> Html Msg
 viewQueryString qs =
