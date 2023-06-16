@@ -18,7 +18,7 @@ main =
 
 type alias Model =
     { inputUrl : String
-    , decodedUrl : Maybe String
+    , decodedUrl : Maybe Url.Url
     , noSafelinks : Bool
     , showComponents : Bool
     , clickable : Bool
@@ -43,7 +43,8 @@ type Msg
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     let
-        decoded noSF url = (if noSF then removeSafelink url else url) |> Url.percentDecode
+        decoded noSF url =
+            (if noSF then removeSafelink url else Just url) |> Maybe.andThen Url.fromString
     in
     case msg of
         UrlUpdate url ->
@@ -82,43 +83,47 @@ view model =
             , br [] []
             , input [ value model.inputUrl, onInput UrlUpdate, size 100 ] []
             , p [] [ formatDecodedUrl model.clickable model.decodedUrl ]
-            , p [] [ if model.showComponents then (model.decodedUrl |> (Maybe.andThen Url.fromString) |> urlDisplay) else text "" ]
+            , p [] [ if model.showComponents then (model.decodedUrl |> Maybe.map urlDisplay |> Maybe.withDefault (text "")) else text "" ] -- ugh
             ]
         ]
     }
 
-formatDecodedUrl : Bool -> Maybe String -> Html msg
+formatDecodedUrl : Bool -> Maybe Url.Url -> Html msg
 formatDecodedUrl clickable decodedUrl =
     case (clickable, decodedUrl) of
     (True, Just url) ->
-        a [ href url ] [ url |> text ]
+        let
+            urlStr = url |> Url.toString
+        in
+        a [ href urlStr ] [ urlStr |> text ]
     _ ->
-        decodedUrl |> Maybe.withDefault "" |> text
+        decodedUrl |> Maybe.map Url.toString |> Maybe.withDefault "" |> text
 
-removeSafelink : String -> String
-removeSafelink url =
+removeSafelink : String -> Maybe String
+removeSafelink urlStr =
     let
-        idxs = String.indexes "url=" url
+        innerUrl qs =
+            qs
+            |> parseQueryString
+            |> List.filter (\kv -> first kv == "url")
+            |> List.head
+            |> Maybe.andThen second
     in
-        case idxs of
-        idx :: _ ->
-            String.dropLeft (idx + 4) url
-        [] ->
-            url
+    urlStr
+    |> Url.fromString
+    |> Maybe.andThen .query
+    |> Maybe.andThen innerUrl
+    |> Maybe.andThen Url.percentDecode
 
-urlDisplay : Maybe Url.Url -> Html Msg
+urlDisplay : Url.Url -> Html Msg
 urlDisplay url =
-    case url of
-        Just u ->
-            ul []
-                [ li [] [ "protocol: " ++ (u.protocol |> protocolString) |> text ]
-                , li [] [ "host: " ++ u.host |> text ]
-                , li [] [ "path: " ++ u.path |> text ]
-                , li [] [ "query: " |> text, (u.query |> Maybe.withDefault "") |> viewQueryString ]
-                , li [] [ "fragment: " ++ (u.fragment |> Maybe.withDefault "") |> text ]
-            ]
-        Nothing ->
-            "invalid url" |> text
+    ul []
+        [ li [] [ "protocol: " ++ (url.protocol |> protocolString) |> text ]
+        , li [] [ "host: " ++ url.host |> text ]
+        , li [] [ "path: " ++ url.path |> text ]
+        , li [] [ "query: " |> text, (url.query |> Maybe.withDefault "") |> viewQueryString ]
+        , li [] [ "fragment: " ++ (url.fragment |> Maybe.withDefault "") |> text ]
+    ]
 
 protocolString : Url.Protocol -> String
 protocolString p =
